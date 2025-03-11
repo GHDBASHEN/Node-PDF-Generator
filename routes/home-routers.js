@@ -1,13 +1,14 @@
 const express = require('express');
 const  homeController = require('../controllers/homeController');
-const { home,generatePDF } = homeController;
+const { home, generatePdf } = homeController;
 
 
 
 const router = express.Router();
 
 router.get('/', home);
-router.get('/download',generatePDF);
+router.get('/download', generatePdf);
+
 
 
 

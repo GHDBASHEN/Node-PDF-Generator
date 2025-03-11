@@ -8,8 +8,16 @@ const home = (req, res, next) => {
     res.render('home');
 }
 
-const generatePdf = async (req, res, next) => {
-    const html = fs.readFileSync(path.join(__dirname, '../views/template.html'), 'utf-8');
+const generatePdf = async (req, res) => {
+
+    let html;
+    try {
+        html = fs.readFileSync(path.join(__dirname, '../views/template.html'), 'utf-8');
+    } catch (error) {
+        console.error("Error reading template file:", error);
+        return res.status(500).send("Internal Server Error: Template file not found.");
+    }
+
     const filename = Math.random() + '_doc' + '.pdf';
     let array = [];
 
@@ -45,17 +53,17 @@ const generatePdf = async (req, res, next) => {
         },
         path: './docs/' + filename
     }
-    pdf.create(document, options)
-        .then(res => {
-            console.log(res);
-        }).catch(error => {
-            console.log(error);
-        });
+    try {
+        await pdf.create(document, options);
         const filepath = 'http://localhost:3000/docs/' + filename;
-
         res.render('download', {
             path: filepath
         });
+    } catch (error) {
+        console.error("Error generating PDF:", error);
+        return res.status(500).send("Internal Server Error: PDF generation failed.");
+    }
+
 }
 
 
