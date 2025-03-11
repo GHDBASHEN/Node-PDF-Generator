@@ -1,27 +1,22 @@
 const fs = require('fs');
-const pdf = require('pdf-creator-node');
 const path = require('path');
-const options = require('../helper/options');
-const data = require('../helper/data')
+const puppeteer = require('puppeteer');
+const data = require('../helpers/data');
 
-const home = (req, res, next) => {
+const homeview = (req, res, next) => {
     res.render('home');
 }
 
-const generatePdf = async (req, res) => {
+const generatePdf = async (req, res, next) => {
+    const selectedProduct = req.query.product; // Get the selected product from the query
 
-    let html;
-    try {
-        html = fs.readFileSync(path.join(__dirname, '../views/template.html'), 'utf-8');
-    } catch (error) {
-        console.error("Error reading template file:", error);
-        return res.status(500).send("Internal Server Error: Template file not found.");
-    }
-
+    const html = fs.readFileSync(path.join(__dirname, '../views/template.html'), 'utf-8');
     const filename = Math.random() + '_doc' + '.pdf';
     let array = [];
 
-    data.forEach(d => {
+    const filteredData = data.filter(d => d.name === selectedProduct); // Filter data based on selected product
+    filteredData.forEach(d => {
+
         const prod = {
             name: d.name,
             description: d.description,
@@ -36,7 +31,7 @@ const generatePdf = async (req, res) => {
 
     let subtotal = 0;
     array.forEach(i => {
-        subtotal += i.total
+        subtotal += i.total;
     });
     const tax = (subtotal * 20) / 100;
     const grandtotal = subtotal - tax;
@@ -45,29 +40,27 @@ const generatePdf = async (req, res) => {
         subtotal: subtotal,
         tax: tax,
         gtotal: grandtotal
-    }
-    const document = {
-        html: html,
-        data: {
-            products: obj
-        },
-        path: './docs/' + filename
-    }
-    try {
-        await pdf.create(document, options);
-        const filepath = 'http://localhost:3000/docs/' + filename;
-        res.render('download', {
-            path: filepath
-        });
-    } catch (error) {
-        console.error("Error generating PDF:", error);
-        return res.status(500).send("Internal Server Error: PDF generation failed.");
-    }
+    };
 
-}
+    // Use Puppeteer to generate PDF
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(html);
+    await page.pdf({
+        path: './docs/' + filename,
+        format: 'A4',
+        printBackground: true
+    });
+    await browser.close();
 
+    const filepath = 'http://localhost:3000/docs/' + filename;
+
+    res.render('download', {
+        path: filepath
+    });
+};
 
 module.exports = {
-    home,
+    homeview,
     generatePdf
-}
+};

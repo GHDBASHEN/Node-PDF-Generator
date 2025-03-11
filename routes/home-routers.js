@@ -1,17 +1,16 @@
 const express = require('express');
-const  homeController = require('../controllers/homeController');
-const { home, generatePdf } = homeController;
-
-
+const {homeview, generatePdf}  = require('../controllers/homeController');
 
 const router = express.Router();
 
-router.get('/', home);
+router.get('/', homeview);
 router.get('/download', generatePdf);
 
+router.get('*', (req, res) => {
+    res.status(404).send('Page not found');
+});
 
+module.exports = {
 
-
-module.exports ={
-    routes : router
+    routes: router
 }
